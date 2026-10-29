@@ -1,0 +1,29 @@
+# Assignment 5 — Evidence Checklist
+
+No live deployment evidence is included. These are proposed checks for an approved validation session, not completed results.
+
+## Planning and approval
+
+* Mentor-approved account/region/design and quota/SCP confirmation.
+* Fresh `terraform validate` and reviewed plan for this exact revision, with IAM changes and replacements explained.
+
+## Application and data
+
+* ALB target group reports both private app targets healthy after DB bootstrap.
+* Inventory page lists seed rows; adding an item persists it in `inventory.items`.
+* Invalid quantities and duplicate SKUs are handled as expected.
+* Database remains private; application and backup host can connect through the intended security groups.
+
+## Connectivity and operations
+
+* Administrator `/32` can reach the bastion; private-host SSH uses the bastion.
+* Shared–Prod and Shared–Dev routing and private DNS resolve correctly.
+* Prod–Dev isolation is verified without opening temporary broad access.
+* Backup job uploads a valid compressed dump; approved restore test proves recovery, not just file creation.
+* SNS subscription is confirmed and backup/event notifications arrive.
+* CloudTrail writes logs to the private audit bucket.
+* IAM test-user permissions and MFA policy behavior are checked with approved credentials and procedures.
+
+## Redaction before publication
+
+Remove account IDs, real public/private endpoint details where required, email addresses, SSH keys, credentials, tokens, state/plan contents, database records containing sensitive data, and browser/session identifiers. Do not fabricate screenshots or mark untested controls as passed.
