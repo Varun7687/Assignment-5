@@ -1,0 +1,23 @@
+# Public template ONLY. Replace placeholders privately before validation/plan.
+# Baseline: us-east-1. This does not grant deployment approval.
+expected_account_id = "REPLACE_WITH_APPROVED_12_DIGIT_ACCOUNT_ID"
+aws_region          = "us-east-1"
+availability_zones  = ["us-east-1a", "us-east-1b"]
+ami_region          = "us-east-1"
+ami_id              = "REPLACE_WITH_APPROVED_AL2023_X86_64_AMI_ID"
+project_name        = "bluefin-landing-zone"
+owner               = "REPLACE_WITH_OWNER"
+admin_cidr          = "REPLACE_WITH_YOUR_PUBLIC_IPV4/32"
+ssh_key_name        = "bluefin-assignment-5"
+ssh_public_key      = "REPLACE_WITH_YOUR_SSH_PUBLIC_KEY"
+db_username         = "bluefinadmin"
+notification_emails = [] # Populate privately; confirm SNS email subscription later.
+bastion_admin_users = {
+  admin1 = "REPLACE_WITH_ADMIN1_SSH_PUBLIC_KEY"
+  admin2 = "REPLACE_WITH_ADMIN2_SSH_PUBLIC_KEY"
+}
+enable_peering_exercise = true
+enable_peering_routes   = false
+force_destroy_buckets   = false
+# Supply a NEW db_password by private interactive input or TF_VAR_db_password.
+# Do not commit AWS credentials, actual account settings, state or plans.
