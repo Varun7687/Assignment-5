@@ -1,0 +1,14 @@
+-- Reference schema. Automated bootstrap runs on the backup host.
+-- Application: Assignment 4 inventory UI adapted for Assignment 5.
+CREATE DATABASE IF NOT EXISTS inventory;
+USE inventory;
+CREATE TABLE IF NOT EXISTS items (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  item_name VARCHAR(160) NOT NULL,
+  sku VARCHAR(64) NOT NULL UNIQUE,
+  quantity INT NOT NULL,
+  warehouse_location VARCHAR(120) NOT NULL,
+  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+-- Bootstrap additionally creates ten demo rows and the restricted TLS app user.
+-- No passwords or CREATE USER statements belong in this public reference file.
