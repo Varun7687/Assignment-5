@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euo pipefail
+export AWS_DEFAULT_REGION='${aws_region}'
+dnf install -y python3 python3-pip
+id bluefinapp >/dev/null 2>&1 || useradd --system --home-dir /opt/bluefin --shell /sbin/nologin bluefinapp
+install -d -m 0755 /opt/bluefin/templates
+python3 -m venv /opt/bluefin/venv
+printf '%s' '${base64encode(requirements_txt)}' | base64 -d > /opt/bluefin/requirements.txt
+/opt/bluefin/venv/bin/pip install -r /opt/bluefin/requirements.txt
+curl --fail --silent --show-error --retry 5 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /opt/bluefin/global-bundle.pem
+printf '%s' '${base64encode(app_py)}' | base64 -d > /opt/bluefin/app.py
+printf '%s' '${base64encode(index_html)}' | base64 -d > /opt/bluefin/templates/index.html
+cat > /etc/bluefin-app.env <<'ENV'
+AWS_DEFAULT_REGION=${aws_region}
+DB_SECRET_ARN=${db_secret_arn}
+ENV
+chmod 0600 /etc/bluefin-app.env
+cat > /etc/systemd/system/bluefin-app.service <<'UNIT'
+[Unit]
+Description=Bluefin inventory application
+Wants=network-online.target
+After=network-online.target
+[Service]
+User=bluefinapp
+Group=bluefinapp
+WorkingDirectory=/opt/bluefin
+EnvironmentFile=/etc/bluefin-app.env
+ExecStart=/opt/bluefin/venv/bin/gunicorn --bind 0.0.0.0:8080 --workers 2 --access-logfile - app:app
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now bluefin-app

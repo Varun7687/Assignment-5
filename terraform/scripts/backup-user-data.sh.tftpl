@@ -1,0 +1,47 @@
+#!/bin/bash
+set -euo pipefail
+dnf install -y python3 python3-pip mariadb105 cronie util-linux
+install -d -m 0755 /opt/bluefin
+install -d -m 0700 /var/backups/bluefin
+python3 -m venv /opt/bluefin/venv
+/opt/bluefin/venv/bin/pip install 'PyMySQL>=1.1,<2' 'boto3>=1.35,<2'
+curl --fail --silent --show-error --retry 5 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /opt/bluefin/global-bundle.pem
+printf '%s' '${base64encode(bootstrap_py)}' | base64 -d > /opt/bluefin/bootstrap-db.py
+printf '%s' '${base64encode(backup_py)}' | base64 -d > /opt/bluefin/db-backup.py
+cat > /etc/bluefin-backup.env <<'ENV'
+AWS_DEFAULT_REGION='${aws_region}'
+DB_SECRET_ARN='${db_secret_arn}'
+MASTER_SECRET_ARN='${master_secret_arn}'
+BACKUP_BUCKET='${backup_bucket}'
+SNS_TOPIC_ARN='${sns_topic_arn}'
+ENV
+chmod 0600 /etc/bluefin-backup.env
+cat > /usr/local/sbin/db-backup.sh <<'SH'
+#!/bin/bash
+set -euo pipefail
+set -a
+source /etc/bluefin-backup.env
+set +a
+exec /usr/bin/flock -n /var/run/bluefin-backup.lock /opt/bluefin/venv/bin/python /opt/bluefin/db-backup.py
+SH
+chmod 0700 /usr/local/sbin/db-backup.sh
+cat > /etc/systemd/system/bluefin-db-bootstrap.service <<'UNIT'
+[Unit]
+Description=Initialize Bluefin inventory schema and least-privilege app user
+Wants=network-online.target
+After=network-online.target
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/bluefin-backup.env
+ExecStart=/opt/bluefin/venv/bin/python /opt/bluefin/bootstrap-db.py
+TimeoutStartSec=1800
+RemainAfterExit=true
+[Install]
+WantedBy=multi-user.target
+UNIT
+# Nightly at 02:00 UTC, plus manual execution through /usr/local/sbin/db-backup.sh.
+printf '0 2 * * * root /usr/local/sbin/db-backup.sh\n' > /etc/cron.d/bluefin-db-backup
+chmod 0644 /etc/cron.d/bluefin-db-backup
+systemctl enable --now crond
+systemctl daemon-reload
+systemctl enable --now bluefin-db-bootstrap
